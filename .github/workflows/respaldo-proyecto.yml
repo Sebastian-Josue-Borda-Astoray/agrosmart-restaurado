@@ -141,7 +141,7 @@ jobs:
       - name: Instalar 7-Zip y jq
         run: apt-get update -qq && (apt-get install -y -qq --no-install-recommends 7zip jq || apt-get install -y -qq --no-install-recommends p7zip-full jq)
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: respaldo-proyecto-${{ github.run_id }}
           path: respaldo-salida
