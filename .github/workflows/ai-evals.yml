@@ -105,7 +105,7 @@ jobs:
 
       - name: Subir reporte completo
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ai-eval-report
           path: src/ia-ops/tests/eval-report.txt
