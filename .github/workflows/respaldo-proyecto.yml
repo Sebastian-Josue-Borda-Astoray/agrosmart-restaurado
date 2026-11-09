@@ -112,7 +112,7 @@ jobs:
         run: bash infrastructure/backup/respaldar.sh respaldo-salida
 
       - name: Subir el respaldo (solo el .7z cifrado)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: respaldo-proyecto-${{ github.run_id }}
           path: respaldo-salida/
