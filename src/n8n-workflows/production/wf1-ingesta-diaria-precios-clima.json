@@ -1,0 +1,1479 @@
+{
+  "name": "WF1: Ingesta Diaria Precios y Clima GMML y MMF2",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.open-meteo.com/v1/forecast",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "latitude",
+              "value": "={{ $json.latitudes }}"
+            },
+            {
+              "name": "longitude",
+              "value": "={{ $json.longitudes }}"
+            },
+            {
+              "name": "daily",
+              "value": "temperature_2m_max,temperature_2m_min,precipitation_sum,relative_humidity_2m_mean,et0_fao_evapotranspiration"
+            },
+            {
+              "name": "timezone",
+              "value": "America/Lima"
+            },
+            {
+              "name": "forecast_days",
+              "value": "7"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        656,
+        336
+      ],
+      "id": "a5967690-e66d-48d4-a83d-bbe83c444866",
+      "name": "HTTP Request Open Meteo Forecast 7 dias",
+      "retryOnFail": false,
+      "waitBetweenTries": 3000
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO clima_diario (\n    fecha,\n    ubicacion,\n    region_id,\n    ciudad_referencia,\n    latitud,\n    longitud,\n    temperatura,\n    precipitacion,\n    humedad,\n    evapotranspiracion,\n    tipo_dato\n)\nVALUES (\n    $1::date,\n    $2::text,\n    $3::integer,\n    $4::text,\n    $5::double precision,\n    $6::double precision,\n    $7::double precision,\n    $8::double precision,\n    $9::double precision,\n    $10::double precision,\n    $11::text\n)\nON CONFLICT (fecha, ubicacion, tipo_dato)\nDO UPDATE SET\n    region_id = EXCLUDED.region_id,\n    ciudad_referencia = EXCLUDED.ciudad_referencia,\n    latitud = EXCLUDED.latitud,\n    longitud = EXCLUDED.longitud,\n    temperatura = EXCLUDED.temperatura,\n    precipitacion = EXCLUDED.precipitacion,\n    humedad = EXCLUDED.humedad,\n    evapotranspiracion = EXCLUDED.evapotranspiracion;",
+        "options": {
+          "queryReplacement": "={{ [   $json.fecha,   $json.ubicacion,   $json.region_id,   $json.ciudad_referencia,   $json.latitud,   $json.longitud,   $json.temperatura,   $json.precipitacion,   $json.humedad,   $json.evapotranspiracion,   $json.tipo_dato ] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1056,
+        336
+      ],
+      "id": "25d056c2-adb5-484a-9f68-9272d74b145e",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "BEC7bWCGlMIkP0Si",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        -704
+      ],
+      "id": "ccc7b25b-ae29-447d-98e8-74426403c320",
+      "name": "Extract from File1"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "precios_diarios",
+          "mode": "list",
+          "cachedResultName": "precios_diarios"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "producto_id": "={{ $json.producto_id }}",
+            "mercado": "={{ $json.mercado }}",
+            "producto": "={{ $json.producto }}",
+            "precio": "={{ $json.precio }}",
+            "volumen": "={{ $json.volumen }}",
+            "volumen_t": "={{ $json.volumen_t }}",
+            "volumen_kg": "={{ $json.volumen_kg }}",
+            "unidad": "={{ $json.unidad }}",
+            "equivalencia_kg": "={{ $json.equivalencia_kg }}",
+            "fecha": "={{ $json.fecha }}"
+          },
+          "matchingColumns": [
+            "producto_id",
+            "mercado",
+            "fecha"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mercado",
+              "displayName": "mercado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "precio",
+              "displayName": "precio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "volumen",
+              "displayName": "volumen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "unidad",
+              "displayName": "unidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "volumen_t",
+              "displayName": "volumen_t",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "volumen_kg",
+              "displayName": "volumen_kg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "equivalencia_kg",
+              "displayName": "equivalencia_kg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "producto_id",
+              "displayName": "producto_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1936,
+        -704
+      ],
+      "id": "6c9025be-5bcf-4e9e-a373-91c9a7808c7d",
+      "name": "Insert or update rows in a table1",
+      "credentials": {
+        "postgres": {
+          "id": "BEC7bWCGlMIkP0Si",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/*\n AgroSmart Insights - WF1\n Normalizador de boletines MIDAGRI - GMML\n\n Nodo: normalizar\n Language: JavaScript\n Mode: Run Once for All Items\n\n Lee el texto de Extract from File1.\n Verifica la fecha del boletin.\n Extrae productos, precios, unidades y volumenes.\n*/\n\nconst entrada = $input.all();\n\nconst fechaObjetivo = String(\n  $('Code - preparar fecha MIDAGRI')\n    .first().json.fecha_objetivo ?? ''\n).slice(0, 10);\n\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(fechaObjetivo)) {\n  throw new Error('fecha_objetivo invalida');\n}\n\n// MESES\nconst meses = {\n  enero: 1,\n  febrero: 2,\n  marzo: 3,\n  abril: 4,\n  mayo: 5,\n  junio: 6,\n  julio: 7,\n  agosto: 8,\n  septiembre: 9,\n  setiembre: 9,\n  octubre: 10,\n  noviembre: 11,\n  diciembre: 12\n};\n\n// UNIDADES COMERCIALES\nconst unidades = [\n  'Atado Grande',\n  'Cajon Chico',\n  'Saco Chico',\n  'Kilogramo',\n  'Paquete',\n  'Docena',\n  'Ciento',\n  'Cajon',\n  'Atado',\n  'Bolsa',\n  'Saco',\n  'Mano',\n  'Unidad'\n];\n\nconst esc = s =>\n  s.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&');\n\nconst unidadRegex = unidades.map(esc).join('|');\n\nconst numero = String.raw`\\d+(?:[.,]\\d+)?`;\nconst celda = String.raw`(?::|${numero})`;\n\n// ORDEN REAL DEL PDF:\n// producto\n// volumen ayer\n// volumen hoy\n// promedio volumen 7 dias\n// promedio volumen 4 viernes\n// unidad\n// equivalencia kg\n// precio ayer\n// precio hoy\n// promedio precio 7 dias\n\nconst patron = new RegExp(\n  String.raw`^(.+?)\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${unidadRegex})\\s+` +\n  String.raw`(${numero})\\s+` +\n  String.raw`(${numero})\\s+` +\n  String.raw`(${numero})\\s+` +\n  String.raw`(${numero})\\s*$`,\n  'i'\n);\n\n// Convertir valores del PDF\nfunction n(valor) {\n  if (valor === ':') return null;\n  return Number(valor.replace(',', '.'));\n}\n\nconst salida = [];\nconst noReconocidas = [];\n\n// PROCESAR PDFs\nfor (const item of entrada) {\n\n  const texto = String(item.json.text ?? '');\n\n  if (!texto.trim()) {\n    throw new Error(\n      'Extract from File1 no entrego texto'\n    );\n  }\n\n  // VALIDAR FECHA REAL DEL BOLETIN\n  const cabecera = texto.match(\n    /\\b(\\d{1,2})\\s+de\\s+([a-záéíóú]+)\\s+de\\s+(20\\d{2})\\b/i\n  );\n\n  if (!cabecera) {\n    throw new Error(\n      'No se pudo verificar la fecha del PDF'\n    );\n  }\n\n  const mm = meses[cabecera[2].toLowerCase()];\n\n  if (!mm) {\n    throw new Error(\n      'Mes no reconocido: ' + cabecera[2]\n    );\n  }\n\n  const fechaPDF =\n    `${cabecera[3]}-` +\n    `${String(mm).padStart(2, '0')}-` +\n    `${cabecera[1].padStart(2, '0')}`;\n\n  if (fechaPDF !== fechaObjetivo) {\n    throw new Error(\n      `El PDF corresponde a ${fechaPDF}, ` +\n      `pero se solicito ${fechaObjetivo}`\n    );\n  }\n\n  // SEPARAR PRODUCTOS POR LINEA\n\n  // SEPARAR PRODUCTOS POR LINEA\n  const lineas = texto\n    .split(/\\r?\\n/)\n    .map(s => s.replace(/\\s+/g, ' ').trim())\n    .filter(Boolean);\n\n  // Detecta una fila que empieza directamente\n  // con los cuatro valores de volumen.\n  const filaSinNombre = new RegExp(\n    String.raw`^${celda}\\s+${celda}\\s+` +\n    String.raw`${celda}\\s+${celda}\\s+` +\n    String.raw`(?:${unidadRegex})\\s+` +\n    String.raw`${numero}\\s+${numero}\\s+` +\n    String.raw`${numero}\\s+${numero}\\s*$`,\n    'i'\n  );\n\n  // Procesar las filas\n  for (let i = 0; i < lineas.length; i++) {\n\n    let linea = lineas[i];\n    let m = linea.match(patron);\n\n    // Si falta el nombre, buscarlo en la línea anterior.\n    if (!m && filaSinNombre.test(linea) && i > 0) {\n\n      const nombreAnterior = lineas[i - 1];\n\n      // No utilizar cabeceras ni otra fila numérica\n      // como si fueran nombres de productos.\n      const esCabecera =\n        /^(Fuente|Elaboraci[oó]n|Productos|Precio|Masa|Unidad|Equiv\\.|TOTAL|PROMEDIO)/i\n          .test(nombreAnterior);\n\n      const tieneUnidad =\n        new RegExp(`\\\\b(?:${unidadRegex})\\\\b`, 'i')\n          .test(nombreAnterior);\n\n      const esNumerico =\n        /^[\\d\\s:.,]+$/.test(nombreAnterior);\n\n      if (\n        !esCabecera &&\n        !tieneUnidad &&\n        !esNumerico &&\n        nombreAnterior.length > 2\n      ) {\n        const reconstruida =\n          nombreAnterior + ' ' + linea;\n\n        const coincidencia =\n          reconstruida.match(patron);\n\n        if (coincidencia) {\n          linea = reconstruida;\n          m = coincidencia;\n        }\n      }\n    }\n\n\n    if (!m) {\n\n      // Detectar posibles productos no interpretados\n      if (\n        /\\b(?:Kilogramo|Docena|Cajon|Atado|Paquete|Bolsa|Ciento|Saco|Unidad|Mano)\\b/i\n          .test(linea) &&\n        !/^(Masa|Precio|Unidad de|Productos|Equiv\\.|Elaboraci[oó]n|Fuente)/i\n          .test(linea)\n      ) {\n        noReconocidas.push(linea);\n      }\n\n      continue;\n    }\n\n    // NOMBRE DEL PRODUCTO\n    const original = m[1].trim();\n\n    // Quitar notas 1/ y 2/ solo del nombre normalizado\n    const producto = original\n      .replace(/\\s+[12]\\/\\s*$/, '')\n      .trim();\n\n    // VOLUMEN HOY EN TONELADAS\n    const volumenHoy = n(m[3]);\n\n    // EQUIVALENCIA COMERCIAL\n    const equivalencia = n(m[7]);\n\n    // PRECIO HOY\n    const precioHoy = n(m[9]);\n\n    // VALIDACIONES\n    if (\n      !producto ||\n      precioHoy === null ||\n      precioHoy < 0 ||\n      equivalencia === null ||\n      equivalencia <= 0 ||\n      (volumenHoy !== null && volumenHoy < 0)\n    ) {\n      throw new Error(\n        'Registro invalido: ' + linea\n      );\n    }\n\n    // GENERAR REGISTRO PARA POSTGRESQL\n    salida.push({\n      json: {\n\n        fecha: fechaPDF,\n\n        producto: producto,\n\n        producto_original: original,\n\n        mercado: 'GMML',\n\n        unidad: m[6],\n\n        equivalencia_kg: equivalencia,\n\n        precio: precioHoy,\n\n        precio_ayer: n(m[8]),\n\n        precio_promedio_7: n(m[10]),\n\n        // El PDF ya expresa las masas en toneladas\n        volumen: volumenHoy,\n\n        volumen_t: volumenHoy,\n\n        volumen_kg:\n          volumenHoy === null\n            ? null\n            : volumenHoy * 1000,\n\n        volumen_ayer_t: n(m[2]),\n\n        volumen_promedio_7_t: n(m[4]),\n\n        volumen_promedio_4_viernes_t: n(m[5]),\n\n        fuente: 'MIDAGRI'\n      }\n    });\n  }\n}\n\n// EVITAR INGESTAS INCOMPLETAS\nif (noReconocidas.length > 0) {\n  throw new Error(\n    'Hay filas que no se pudieron interpretar. ' +\n    'No insertar. Ejemplos: ' +\n    noReconocidas.slice(0, 3).join(' | ')\n  );\n}\n\n// CONTROL DE CANTIDAD DE PRODUCTOS\nif (salida.length < 50 || salida.length > 120) {\n  throw new Error(\n    `Cantidad inesperada de productos: ${salida.length}`\n  );\n}\n\n// CONTROL DE DUPLICADOS\nconst claves = new Set();\n\nfor (const item of salida) {\n  const r = item.json;\n\n  const clave = [\n    r.fecha,\n    r.producto,\n    r.mercado,\n    r.unidad\n  ].join('|');\n\n  if (claves.has(clave)) {\n    throw new Error(\n      'Producto duplicado: ' + clave\n    );\n  }\n\n  claves.add(clave);\n}\n\n// ENTREGAR PRODUCTOS\nreturn salida;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1088,
+        -704
+      ],
+      "id": "9cba004d-850a-45e0-8693-0f244e1a5860",
+      "name": "normalizar"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      region_id: 1,\n      region: \"Junín\",\n      ciudad_referencia: \"Huancayo\",\n      latitud: -12.0651,\n      longitud: -75.2049\n    }\n  },\n  {\n    json: {\n      region_id: 2,\n      region: \"Ica\",\n      ciudad_referencia: \"Ica\",\n      latitud: -14.0678,\n      longitud: -75.7286\n    }\n  },\n  {\n    json: {\n      region_id: 3,\n      region: \"La Libertad\",\n      ciudad_referencia: \"Trujillo\",\n      latitud: -8.1116,\n      longitud: -79.0287\n    }\n  },\n  {\n    json: {\n      region_id: 4,\n      region: \"Huánuco\",\n      ciudad_referencia: \"Huánuco\",\n      latitud: -9.9306,\n      longitud: -76.2422\n    }\n  },\n  {\n    json: {\n      region_id: 5,\n      region: \"Ayacucho\",\n      ciudad_referencia: \"Ayacucho\",\n      latitud: -13.1631,\n      longitud: -74.2236\n    }\n  },\n  {\n    json: {\n      region_id: 6,\n      region: \"Arequipa\",\n      ciudad_referencia: \"Arequipa\",\n      latitud: -16.4090,\n      longitud: -71.5375\n    }\n  },\n  {\n    json: {\n      region_id: 7,\n      region: \"Áncash\",\n      ciudad_referencia: \"Huaraz\",\n      latitud: -9.5278,\n      longitud: -77.5278\n    }\n  },\n  {\n    json: {\n      region_id: 8,\n      region: \"Cajamarca\",\n      ciudad_referencia: \"Cajamarca\",\n      latitud: -7.1617,\n      longitud: -78.5128\n    }\n  },\n  {\n    json: {\n      region_id: 9,\n      region: \"Piura\",\n      ciudad_referencia: \"Piura\",\n      latitud: -5.1945,\n      longitud: -80.6328\n    }\n  },\n  {\n    json: {\n      region_id: 10,\n      region: \"Lima\",\n      ciudad_referencia: \"Huaral\",\n      latitud: -11.4950,\n      longitud: -77.2078\n    }\n  },\n  {\n    json: {\n      region_id: 11,\n      region: \"Cusco\",\n      ciudad_referencia: \"Cusco\",\n      latitud: -13.5319,\n      longitud: -71.9675\n    }\n  },\n  {\n    json: {\n      region_id: 12,\n      region: \"Apurímac\",\n      ciudad_referencia: \"Abancay\",\n      latitud: -13.6339,\n      longitud: -72.8814\n    }\n  },\n  {\n    json: {\n      region_id: 13,\n      region: \"Pasco\",\n      ciudad_referencia: \"Cerro de Pasco\",\n      latitud: -10.6864,\n      longitud: -76.2625\n    }\n  },\n  {\n    json: {\n      region_id: 14,\n      region: \"Lambayeque\",\n      ciudad_referencia: \"Chiclayo\",\n      latitud: -6.7714,\n      longitud: -79.8409\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        320
+      ],
+      "id": "33bdac31-df52-451d-8a13-a798f431967b",
+      "name": "Code in JavaScript Regiones productoras"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst TAMANO_LOTE = 5;\nconst lotes = [];\n\nfor (let i = 0; i < items.length; i += TAMANO_LOTE) {\n\n  const grupo = items.slice(i, i + TAMANO_LOTE);\n\n  lotes.push({\n    json: {\n      regiones: grupo.map(x => x.json),\n\n      latitudes: grupo\n        .map(x => x.json.latitud)\n        .join(','),\n\n      longitudes: grupo\n        .map(x => x.json.longitud)\n        .join(',')\n    }\n  });\n}\n\nreturn lotes;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        320
+      ],
+      "id": "2ffb9cf4-b2f6-42a2-9a66-518e9bc50384",
+      "name": "Code - Agrupar regiones de 5"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT\n    EXISTS (\n        SELECT 1\n        FROM public.precios_diarios\n        WHERE fecha =\n            (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date\n          AND mercado = 'GMML'\n    ) AS gmml_cargado,\n\n    EXISTS (\n        SELECT 1\n        FROM public.precios_diarios\n        WHERE fecha =\n            (CURRENT_TIMESTAMP AT TIME ZONE 'America/Lima')::date\n          AND mercado = 'MMF2'\n    ) AS mmf2_cargado;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -16,
+        -128
+      ],
+      "id": "f6e1d368-1175-4812-a116-fbb95594c08e",
+      "name": "Postgres - Verificar ingesta de hoy",
+      "credentials": {
+        "postgres": {
+          "id": "BEC7bWCGlMIkP0Si",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * 1-6"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 11 * * 1-6"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 12 * * 1-6"
+            },
+            {
+              "field": "cronExpression",
+              "expression": "0 13 * * 1-6"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "ba0b94dd-5d62-4653-b6c2-66fe51498f4d",
+      "name": "Schedule Trigger 10:00 am start"
+    },
+    {
+      "parameters": {
+        "url": "=https://sliding-babied-rendering.ngrok-free.dev/pdf",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $json.fecha_objetivo }}"
+            },
+            {
+              "name": "mercado",
+              "value": "GMML"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Bridge-Token",
+              "value": "{{BRIDGE_TOKEN_SE_DEBE_MOVER_A_CREDENCIAL}}"
+            },
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        688,
+        -464
+      ],
+      "id": "ca4fc273-083f-4192-9aef-7d086fc248d7",
+      "name": "HTTP Request - descargar PDF por Tunnel",
+      "retryOnFail": false,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/*\n AgroSmart Insights - WF1\n Preparar fecha automatica MIDAGRI\n Zona horaria: America/Lima\n*/\n\nconst ahora = new Date();\n\nconst partes = new Intl.DateTimeFormat('en-US', {\n  timeZone: 'America/Lima',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit'\n}).formatToParts(ahora);\n\nconst obtener = tipo =>\n  partes.find(p => p.type === tipo)?.value;\n\nconst year = obtener('year');\nconst month = obtener('month');\nconst day = obtener('day');\n\nconst fechaObjetivo = `${year}-${month}-${day}`;\n\nreturn [\n  {\n    json: {\n      fecha_objetivo: fechaObjetivo\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -464
+      ],
+      "id": "9778be62-1f09-4a75-801f-d92641de1d5b",
+      "name": "Code - preparar fecha MIDAGRI",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fecha = $('Code - preparar fecha MIDAGRI')\n  .first().json.fecha_objetivo;\n\nreturn [{\n  json: {\n    ok: false,\n    estado: 'BOLETIN_NO_DISPONIBLE',\n    mercado: 'GMML',\n    fecha,\n    ingesta_realizada: false,\n    mensaje:\n      `El puente está accesible, pero MIDAGRI todavía ` +\n      `no tiene disponible el boletín GMML del ${fecha}. ` +\n      `No se cargaron precios nuevos.`\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -480
+      ],
+      "id": "be1b192c-c3d1-4209-850f-3b6a01ef6b47",
+      "name": "Code - Boletín aún no disponible"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ /BOLETIN_NO_DISPONIBLE/i.test(JSON.stringify($json.error ?? $json)) }}",
+                    "rightValue": "={{ /BOLETIN_NO_DISPONIBLE/i.test(JSON.stringify($json.error ?? $json)) }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "012a3f6a-c127-4a60-912b-d880447be422"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7fdcd05d-94b0-4c1a-b66f-459cdb278cae",
+                    "leftValue": "={{ /ERR_NGROK_3200|endpoint.{0,40}offline|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ECONNRESET|EAI_AGAIN|socket hang up/i.test(JSON.stringify($json.error ?? $json)) }}",
+                    "rightValue": "=502",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        912,
+        -464
+      ],
+      "id": "f52768d8-e2ae-4bcb-8a96-45c9d05152e4",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fecha = $('Code - preparar fecha MIDAGRI')\n  .first().json.fecha_objetivo;\n\nconst error = $input.first().json.error ?? {};\n\nconst status = Number(\n  error.httpCode ??\n  error.statusCode ??\n  error.status ??\n  0\n);\n\nreturn [{\n  json: {\n    ok: false,\n    estado: 'PUENTE_INACTIVO',\n    mercado: 'GMML',\n    fecha,\n    codigo_http: status || null,\n    ingesta_realizada: false,\n    requiere_revision: true,\n    mensaje:\n      'No fue posible establecer conexión con el ' +\n      'puente Python/ngrok de MIDAGRI. ' +\n      'Verifica que el bridge y ngrok estén activos ' +\n      'y que la URL configurada sea correcta. ' +\n      'No se descargó el boletín ni se actualizaron precios.'\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        -448
+      ],
+      "id": "5ec61992-d21b-4adf-adcd-48e092e04119",
+      "name": "Code - Error conexión MIDAGRI"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fecha = $('Code - preparar fecha MIDAGRI')\n  .first().json.fecha_objetivo;\n\nconst error = $input.first().json.error ?? {};\n\nconst status = Number(\n  error.httpCode ??\n  error.statusCode ??\n  error.status ??\n  0\n);\n\nconst detalle = String(\n  error.message ??\n  'Sin información adicional'\n);\n\nreturn [{\n  json: {\n    ok: false,\n    estado: 'ERROR_DESCARGA_SIN_CLASIFICAR',\n    mercado: 'GMML',\n    fecha,\n    codigo_http: status || null,\n    ingesta_realizada: false,\n    requiere_revision: true,\n    mensaje:\n      'La descarga del boletín MIDAGRI no pudo ' +\n      'completarse. No se confirmó si el problema ' +\n      'corresponde al túnel, a la fuente o al servicio. ' +\n      'No se actualizaron los precios.',\n    detalle_tecnico: detalle.slice(0, 300)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        -416
+      ],
+      "id": "c449ac8a-42c2-4dce-8c12-5ea6b69a6cfd",
+      "name": "Code - Error inesperado MIDAGRI"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        432,
+        320
+      ],
+      "id": "613c2568-bc7c-4675-874f-136c1ec8d395",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "const salida = [];\n\n// Respuesta del HTTP.\n// Si \"Include Response Headers and Status\" está activo,\n// Open-Meteo suele venir dentro de body.\nconst raw = $json.body ?? $json;\n\n// Cuando enviamos varias coordenadas,\n// Open-Meteo devuelve un array.\nconst datos = Array.isArray(raw) ? raw : [raw];\n\n// Lote actual que está procesando el Loop\nconst lote = $('Loop Over Items').item.json.regiones ?? [];\n\nfor (let i = 0; i < datos.length; i++) {\n\n  const clima = datos[i];\n  const region = lote[i];\n\n  if (!region) {\n    continue;\n  }\n\n  if (!clima?.daily?.time) {\n    continue;\n  }\n\n  const fechas = clima.daily.time;\n\n  for (let j = 0; j < fechas.length; j++) {\n\n    const tMax =\n      clima.daily?.temperature_2m_max?.[j] ??\n      clima.daily?.temperature_max?.[j] ??\n      null;\n    \n    const tMin =\n      clima.daily?.temperature_2m_min?.[j] ??\n      clima.daily?.temperature_min?.[j] ??\n      null;\n\n    // Promedio simple para tu columna \"temperatura\"\n    let temperatura = null;\n\n    if (tMax !== null && tMin !== null) {\n      temperatura = (Number(tMax) + Number(tMin)) / 2;\n    }\n\n    salida.push({\n      json: {\n        fecha: fechas[j],\n\n        ubicacion:\n          region.ubicacion ??\n          region.region ??\n          region.nombre ??\n          null,\n\n        region_id:\n          region.region_id ?? null,\n\n        ciudad_referencia:\n          region.ciudad_referencia ??\n          region.ciudad ??\n          null,\n\n        latitud:\n          region.latitud,\n\n        longitud:\n          region.longitud,\n\n        temperatura: temperatura,\n\n        precipitacion:\n          clima.daily.precipitation_sum?.[j] ?? null,\n\n        humedad:\n          clima.daily.relative_humidity_2m_mean?.[j] ?? null,\n\n        evapotranspiracion:\n          clima.daily.et0_fao_evapotranspiration?.[j] ?? null,\n\n        tipo_dato: \"PRONOSTICO\"\n      }\n    });\n  }\n}\n\nreturn salida;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        336
+      ],
+      "id": "f4177660-08b0-4e33-b053-8a5d43ae0652",
+      "name": "Code - Normalizar clima por lote1"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        336
+      ],
+      "id": "df448019-cecf-4863-bf5c-86bef4ebf8d3",
+      "name": "Wait 3 segundos1",
+      "webhookId": "dbed0d73-d1b3-462d-bf1c-f856edb389d0"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst registros = $input.all().map(item => item.json);\n\nif (registros.length === 0) {\n  throw new Error('No hay productos para mapear.');\n}\n\nreturn [{\n  json: {\n    registros,\n    total: registros.length\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -704
+      ],
+      "id": "6ea75f74-9352-4947-b268-568d8410c273",
+      "name": "Crear Code - Preparar lote"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nWITH entrada AS (\n    SELECT *\n    FROM jsonb_to_recordset($1::jsonb) AS r (\n        fecha text,\n        producto text,\n        mercado text,\n        unidad text,\n        equivalencia_kg numeric,\n        precio numeric,\n        volumen_t numeric\n    )\n),\nmapeados AS (\n    SELECT\n        e.*,\n        m.id AS producto_id,\n        m.nombre_canonico,\n        COUNT(m.id) OVER (\n            PARTITION BY e.fecha, e.producto,\n                         e.mercado, e.unidad\n        ) AS cantidad_coincidencias\n    FROM entrada e\n    LEFT JOIN productos_maestro m\n      ON m.activo = TRUE\n     AND LOWER(UNACCENT(TRIM(e.producto))) =\n         LOWER(UNACCENT(TRIM(m.nombre_canonico)))\n)\nSELECT\n    fecha,\n    producto,\n    producto_id,\n    nombre_canonico,\n    mercado,\n    unidad,\n    equivalencia_kg,\n    precio,\n    volumen_t,\n    cantidad_coincidencias,\n    CASE\n        WHEN producto_id IS NULL THEN 'SIN_MAPEO'\n        WHEN cantidad_coincidencias > 1 THEN 'AMBIGUO'\n        ELSE 'CORRECTO'\n    END AS estado_mapeo\nFROM mapeados\nORDER BY producto, unidad;\n",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json.registros) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1488,
+        -704
+      ],
+      "id": "f4b4eee9-15bf-429b-ade0-7bb4fe9b60b6",
+      "name": "Postgres - Mapear ID maestro",
+      "credentials": {
+        "postgres": {
+          "id": "BEC7bWCGlMIkP0Si",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/*\n AgroSmart WF1\n Validar correspondencias con productos_maestro\n\n Detiene el flujo si existen:\n - Productos sin ID maestro\n - Coincidencias ambiguas\n - Registros con valores invalidos\n*/\n\nconst registros = $input.all().map(item => item.json);\n\nif (registros.length === 0) {\n  throw new Error('No se recibieron registros.');\n}\n\n// Recuperamos los campos originales del normalizador\nconst originales = $('normalizar').all().map(x => x.json);\n\nfunction clave(r) {\n  return [\n    r.fecha,\n    r.producto,\n    r.mercado,\n    r.unidad\n  ].join('|');\n}\n\nconst mapaOriginal = new Map(\n  originales.map(r => [clave(r), r])\n);\n\nconst errores = [];\nconst resultado = [];\n\nfunction numero(valor) {\n  if (valor === null || valor === undefined || valor === '') {\n    return null;\n  }\n  const n = Number(valor);\n  return Number.isFinite(n) ? n : null;\n}\n\nfor (const r of registros) {\n\n  const original = mapaOriginal.get(clave(r));\n\n  if (!original) {\n    errores.push(`Registro original no encontrado: ${r.producto}`);\n    continue;\n  }\n\n  if (\n    r.estado_mapeo !== 'CORRECTO' ||\n    numero(r.cantidad_coincidencias) !== 1 ||\n    numero(r.producto_id) === null\n  ) {\n    errores.push(\n      `${r.producto}: ${r.estado_mapeo} ` +\n      `(coincidencias: ${r.cantidad_coincidencias})`\n    );\n    continue;\n  }\n\n  const precio = numero(r.precio);\n  const volumen = numero(r.volumen_t);\n  const equivalencia = numero(r.equivalencia_kg);\n\n  if (\n    precio === null ||\n    precio < 0 ||\n    equivalencia === null ||\n    equivalencia <= 0 ||\n    (volumen !== null && volumen < 0)\n  ) {\n    errores.push(`Valores invalidos: ${r.producto}`);\n    continue;\n  }\n\n  resultado.push({\n    json: {\n      ...original,\n\n      producto: r.nombre_canonico,\n      producto_id: numero(r.producto_id),\n\n      precio,\n      equivalencia_kg: equivalencia,\n      volumen: volumen,\n      volumen_t: volumen,\n      volumen_kg: volumen === null ? null : volumen * 1000,\n\n      estado_mapeo: 'CORRECTO'\n    }\n  });\n}\n\n// Comprobar que no se hayan perdido registros\nif (resultado.length !== originales.length) {\n  errores.push(\n    `Se recibieron ${originales.length} originales, ` +\n    `pero solo ${resultado.length} fueron validados.`\n  );\n}\n\nif (errores.length > 0) {\n  throw new Error(\n    'Validacion de mapeo fallida:\\n' +\n    errores.join('\\n')\n  );\n}\n\nreturn resultado;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -704
+      ],
+      "id": "16a9e25b-e4ad-4a31-ada3-ba719b4c93e6",
+      "name": "Code - Validar mapeo"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6c5cdd87-9238-475a-b79b-33ca78053ae9",
+              "leftValue": "={{ $json.gmml_cargado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        -448
+      ],
+      "id": "0faf852b-758d-4384-8c51-c996c3979b5a",
+      "name": "IF - GMML pendiente"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6c5cdd87-9238-475a-b79b-33ca78053ae9",
+              "leftValue": "={{ $json.mmf2_cargado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        -128
+      ],
+      "id": "8774fde2-7c99-4cfd-b865-0f417d5718ad",
+      "name": "IF - MMF2 pendiente"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/*\n AgroSmart Insights - WF0 / WF1\n Parser del boletin independiente MMF2\n Fuente: MIDAGRI - Mercado Mayorista de Frutas N. 2\n\n Precios: soles por unidad comercial.\n Abastecimiento: toneladas metricas.\n Compatible con WF0 y WF1.\n*/\n\nconst items = $input.all();\nconst resultados = [];\nconst vistos = new Set();\nconst errores = [];\n\nconst meses = {\n  enero: 1, febrero: 2, marzo: 3,\n  abril: 4, mayo: 5, junio: 6,\n  julio: 7, agosto: 8, setiembre: 9,\n  septiembre: 9, octubre: 10,\n  noviembre: 11, diciembre: 12\n};\n\n// Obtener fecha solicitada en WF1 o WF0.\nfunction obtenerFecha() {\n  const opciones = [\n    () => $('Code - preparar fecha MIDAGRI1')\n      .first().json.fecha_objetivo,\n\n    () => $('Loop Over Items')\n      .item.json.fecha_objetivo\n  ];\n\n  for (const opcion of opciones) {\n    try {\n      const fecha = String(opcion() ?? '')\n        .slice(0, 10);\n\n      if (/^\\d{4}-\\d{2}-\\d{2}$/.test(fecha)) {\n        return fecha;\n      }\n    } catch (e) {}\n  }\n\n  throw new Error(\n    'No se encontro fecha_objetivo de WF0 o WF1'\n  );\n}\n\nconst fechaObjetivo = obtenerFecha();\n\n// Formato:\n// Producto | 4 volumenes | unidad |\n// equivalencia kg | 3 precios.\n\nconst num = String.raw`\\d+(?:[.,]\\d+)?`;\nconst celda = String.raw`(?:${num}|:|\\.{3})`;\n\nconst unidad = String.raw`(Kilogramo|Bandeja|Caj[oó]n|Caja|Jaba|Bolsa|Ciento|Unidad|Saco|Paquete|Atado|Mano)`;\n\nconst patron = new RegExp(\n  String.raw`^(.+?)\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  unidad + String.raw`\\s+` +\n  String.raw`(${num})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s+` +\n  String.raw`(${celda})\\s*$`,\n  'i'\n);\n\nfunction numero(valor) {\n  const texto = String(valor ?? '').trim();\n\n  // Valores no disponibles en el boletin.\n  if (\n    texto === ':' ||\n    texto === '...' ||\n    texto === ''\n  ) {\n    return null;\n  }\n\n  const n = Number(texto.replace(',', '.'));\n\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction extraerFila(texto) {\n  const m = texto.match(patron);\n\n  if (!m) return null;\n\n\nlet producto = m[1]\n  .replace(/\\s+/g, ' ')\n  .trim();\n  \nproducto = producto.replace(\n  /^Ayer\\s+Hoy\\s+[ÚU]ltimos\\s+7\\s+d[ií]as\\s+/i,\n  ''\n);\n\n\n// Eliminar encabezado de la tabla\n// que se une accidentalmente a Aguaje.\nproducto = producto.replace(\n  /^Frutas\\s+(?=Aguaje$)/i,\n  ''\n);\n\n\n  if (\n    producto.length < 2 ||\n    producto.length > 90 ||\n    /BOLET[IÍ]N|PRODUCTOS|PRECIO|MASA|FUENTE|ELABORACI[OÓ]N|MMF2|MIDAGRI|DGESEP|lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo/i\n      .test(producto)\n  ) {\n    return null;\n  }\n\n  return {\n    producto,\n    volumen_ayer_t: numero(m[2]),\n    volumen_t: numero(m[3]),\n    volumen_promedio_7d_t: numero(m[4]),\n    volumen_promedio_4d_t: numero(m[5]),\n\n    unidad: m[6],\n    equivalencia_kg: numero(m[7]),\n\n    precio_ayer: numero(m[8]),\n    precio: numero(m[9]),\n    precio_promedio_7d: numero(m[10])\n  };\n}\n\nfor (const item of items) {\n  const texto = String(item.json.text ?? '');\n\n  if (!texto.trim()) {\n    throw new Error(\n      'Extract from File1 no entrego texto'\n    );\n  }\n\n  // Validar el tipo de boletin.\n  if (\n    !/MMF2\\s*-\\s*Abastecimiento|MERCADO MAYORISTA\\s+DE FRUTAS/i.test(texto) ||\n    !/Masa de ingreso\\s*\\(t\\)/i.test(texto)\n  ) {\n    throw new Error(\n      'El documento no corresponde al boletin independiente MMF2'\n    );\n  }\n\n  // Extraer fecha de la cabecera.\n  const cabecera = texto.match(\n    /\\b(\\d{1,2})\\s+de\\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|setiembre|septiembre|octubre|noviembre|diciembre)\\s+de\\s+(20\\d{2})\\b/i\n  );\n\n  if (!cabecera) {\n    throw new Error(\n      'No se pudo verificar la fecha del PDF'\n    );\n  }\n\n  const fechaPDF =\n    `${cabecera[3]}-` +\n    `${String(meses[cabecera[2].toLowerCase()]).padStart(2, '0')}-` +\n    `${String(cabecera[1]).padStart(2, '0')}`;\n\n  if (fechaPDF !== fechaObjetivo) {\n    throw new Error(\n      `Fecha del PDF: ${fechaPDF}. ` +\n      `Fecha solicitada: ${fechaObjetivo}`\n    );\n  }\n\n  const lineas = texto\n    .split(/\\r?\\n/)\n    .map(x => x.replace(/\\s+/g, ' ').trim())\n    .filter(Boolean);\n\n  // Procesar filas completas o divididas\n  // en varias lineas del PDF.\n  for (let i = 0; i < lineas.length; i++) {\n    let encontrado = null;\n    let consumir = 0;\n\n    for (\n      let k = 1;\n      k <= Math.min(12, lineas.length - i);\n      k++\n    ) {\n      const candidato = lineas\n        .slice(i, i + k)\n        .join(' ');\n\n      const fila = extraerFila(candidato);\n\n      if (fila) {\n        encontrado = fila;\n        consumir = k;\n        break;\n      }\n\n      if (candidato.length > 190) break;\n    }\n\n    if (!encontrado) continue;\n\n    i += consumir - 1;\n\n    const r = encontrado;\n    const clave =\n      `${fechaPDF}|${r.producto.toUpperCase()}`;\n\n    if (vistos.has(clave)) continue;\n    vistos.add(clave);\n\n    if (\n      r.equivalencia_kg === null ||\n      r.equivalencia_kg <= 0\n    ) {\n      errores.push(\n        'Equivalencia invalida: ' + r.producto\n      );\n      continue;\n    }\n\n    if (r.precio === null || r.precio <= 0) {\n      errores.push(\n        'Sin precio de hoy: ' + r.producto\n      );\n      continue;\n    }\n\n    resultados.push({\n      json: {\n        fecha: fechaPDF,\n        codigo_cnpa: null,\n\n        producto: r.producto,\n        mercado: 'MMF2',\n\n        unidad: r.unidad,\n        equivalencia_kg: r.equivalencia_kg,\n\n        precio: r.precio,\n        precio_ayer: r.precio_ayer,\n        precio_promedio_7d: r.precio_promedio_7d,\n\n        volumen_t: r.volumen_t,\n        volumen_kg:\n          r.volumen_t === null\n            ? null\n            : r.volumen_t * 1000,\n\n        volumen_ayer_t: r.volumen_ayer_t,\n        volumen_promedio_7d_t:\n          r.volumen_promedio_7d_t,\n        volumen_promedio_4d_t:\n          r.volumen_promedio_4d_t,\n\n        fuente: 'MIDAGRI',\n        formato_origen: 'MMF2 independiente',\n        tipo_prueba: 'parser_mmf2_ingreso'\n      }\n    });\n  }\n}\n\n// No ocultar filas con problemas.\nif (errores.length > 0) {\n  throw new Error(\n    `Filas MMF2 por revisar (${errores.length}): ` +\n    errores.slice(0, 5).join(' | ')\n  );\n}\n\nif (\n  resultados.length < 40 ||\n  resultados.length > 150\n) {\n  throw new Error(\n    `Cantidad anomala de productos MMF2: ` +\n    resultados.length\n  );\n}\n\nconsole.log(\n  `Boletin MMF2 ${fechaObjetivo}: ` +\n  `${resultados.length} productos`\n);\n\nreturn resultados;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -176
+      ],
+      "id": "cfe5e5d0-f703-4a31-98d9-3786f09e37e3",
+      "name": "Code - Parser MMF2 Prueba"
+    },
+    {
+      "parameters": {
+        "url": "=https://sliding-babied-rendering.ngrok-free.dev/pdf",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "date",
+              "value": "={{ $json.fecha_objetivo }}"
+            },
+            {
+              "name": "mercado",
+              "value": "MMF2"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Bridge-Token",
+              "value": "{{BRIDGE_TOKEN_SE_DEBE_MOVER_A_CREDENCIAL}}"
+            },
+            {
+              "name": "ngrok-skip-browser-warning",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        704,
+        -144
+      ],
+      "id": "465d3f50-80e1-4d05-83d2-3001d08bf828",
+      "name": "HTTP Request - descargar PDF por Tunnel1",
+      "retryOnFail": false,
+      "waitBetweenTries": 3000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n/*\n AgroSmart Insights - WF1\n Preparar fecha automatica MIDAGRI\n Zona horaria: America/Lima\n*/\n\nconst ahora = new Date();\n\nconst partes = new Intl.DateTimeFormat('en-US', {\n  timeZone: 'America/Lima',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit'\n}).formatToParts(ahora);\n\nconst obtener = tipo =>\n  partes.find(p => p.type === tipo)?.value;\n\nconst year = obtener('year');\nconst month = obtener('month');\nconst day = obtener('day');\n\nconst fechaObjetivo = `${year}-${month}-${day}`;\n\nreturn [\n  {\n    json: {\n      fecha_objetivo: fechaObjetivo\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        -144
+      ],
+      "id": "e4de08d9-84ba-40e3-a953-75c555969d2b",
+      "name": "Code - preparar fecha MIDAGRI1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        944,
+        -176
+      ],
+      "id": "5bc0f1d9-2315-40e3-ac44-65e39207f6b0",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    producto_original,\n    producto_id,\n    nombre_canonico,\n    estado_mapeo\nFROM public.resolver_producto_mmf2($1::text);",
+        "options": {
+          "queryReplacement": "={{ [$json.producto] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1360,
+        -176
+      ],
+      "id": "ab5cec19-de4e-4208-904d-73746232b46f",
+      "name": "Execute a SQL query Buscar producto_id",
+      "credentials": {
+        "postgres": {
+          "id": "BEC7bWCGlMIkP0Si",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst maestros = $input.all();\n\nconst originales = $(\"Code - Parser MMF2 Prueba\").all();\n\nif (maestros.length !== originales.length) {\n  throw new Error(\n    `Cantidad diferente: ${maestros.length} resultados SQL y ${originales.length} productos`\n  );\n}\n\nreturn maestros.map((maestro, index) => {\n  const original = originales[index].json;\n  const encontrado = maestro.json;\n\n  const normalizar = s => String(s ?? '')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .trim()\n    .toLowerCase();\n\n  if (\n    normalizar(original.producto) !==\n    normalizar(encontrado.producto_original)\n  ) {\n    throw new Error(\n      `Mapeo incorrecto: ${original.producto} / ${encontrado.producto_original}`\n    );\n  }\n\n  if (!encontrado.producto_id) {\n    throw new Error(\n      `Producto sin ID maestro: ${original.producto}`\n    );\n  }\n\n  return {\n    json: {\n      ...original,\n      producto_id: Number(encontrado.producto_id),\n      producto: encontrado.nombre_canonico\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -176
+      ],
+      "id": "9db839f1-f109-4251-815e-a1b7877c9f5c",
+      "name": "Code in JavaScript Unir producto maestro"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public",
+          "cachedResultName": "public",
+          "cachedResultUrl": ""
+        },
+        "table": {
+          "__rl": true,
+          "value": "precios_diarios",
+          "mode": "list",
+          "cachedResultName": "precios_diarios"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "producto_id": "={{ $json.producto_id }}",
+            "mercado": "={{ $json.mercado }}",
+            "fecha": "={{ $json.fecha }}",
+            "producto": "={{ $json.producto }}",
+            "precio": "={{ $json.precio }}",
+            "volumen": "={{ $json.volumen_t }}",
+            "unidad": "={{ $json.unidad }}",
+            "volumen_t": "={{ $json.volumen_t }}",
+            "volumen_kg": "={{ $json.volumen_kg }}",
+            "equivalencia_kg": "={{ $json.equivalencia_kg }}"
+          },
+          "matchingColumns": [
+            "producto_id",
+            "fecha",
+            "mercado"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "producto",
+              "displayName": "producto",
+              "required": true,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "mercado",
+              "displayName": "mercado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "precio",
+              "displayName": "precio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "volumen",
+              "displayName": "volumen",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "unidad",
+              "displayName": "unidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": false,
+              "removed": true
+            },
+            {
+              "id": "volumen_t",
+              "displayName": "volumen_t",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "volumen_kg",
+              "displayName": "volumen_kg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "equivalencia_kg",
+              "displayName": "equivalencia_kg",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "producto_id",
+              "displayName": "producto_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        1984,
+        -176
+      ],
+      "id": "2640c8d1-d714-4f4c-8256-7b2039a83ff4",
+      "name": "Insert or update rows in a table2",
+      "credentials": {
+        "postgres": {
+          "id": "BEC7bWCGlMIkP0Si",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst items = $input.all();\nconst claves = new Set();\n\nfor (const item of items) {\n  const r = item.json;\n\n  if (\n    r.mercado !== 'MMF2' ||\n    !/^\\d{4}-\\d{2}-\\d{2}$/.test(r.fecha) ||\n    !Number.isInteger(Number(r.producto_id)) ||\n    Number(r.producto_id) <= 0 ||\n    !Number.isFinite(Number(r.precio)) ||\n    Number(r.precio) <= 0\n  ) {\n    throw new Error(\n      'Registro MMF2 inválido: ' +\n      JSON.stringify(r)\n    );\n  }\n\n  const clave = `${r.fecha}|${r.mercado}|${r.producto_id}`;\n\n  if (claves.has(clave)) {\n    throw new Error('Registro duplicado: ' + clave);\n  }\n\n  claves.add(clave);\n}\nif (items.length < 1 || items.length > 150) {\n  throw new Error(\n    `Cantidad inesperada de registros MMF2: ${items.length}`\n  );\n}\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        -176
+      ],
+      "id": "c8182511-3d43-4552-8676-f80aebdebb97",
+      "name": "Code - Validar MMF2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const registros = $input.all().map(i => i.json);\n\nconst pendientes = registros.filter(r =>\n  r.producto_id == null ||\n  r.producto_id === ''\n);\n\nreturn [{\n  json: {\n    total: registros.length,\n    con_id: registros.length - pendientes.length,\n    pendientes: pendientes.length,\n    lista_pendientes: pendientes.map(r => ({\n      producto: r.producto_original,\n      estado: r.estado_mapeo,\n      posible_maestro: r.nombre_canonico\n    }))\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -16
+      ],
+      "id": "189e2837-d217-4eaa-af9a-db6ecd0dad36",
+      "name": "Code - Diagnosticar IDs WF1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fecha = $('Code - preparar fecha MIDAGRI')\n  .first().json.fecha_objetivo;\n\nreturn [{\n  json: {\n    ok: false,\n    estado: 'BOLETIN_NO_DISPONIBLE',\n    mercado: 'MMF2',\n    fecha,\n    ingesta_realizada: false,\n    mensaje:\n      `El puente está accesible, pero MIDAGRI todavía ` +\n      `no tiene disponible el boletín MMF2 del ${fecha}. ` +\n      `No se cargaron precios nuevos.`\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        128
+      ],
+      "id": "87cad9c4-99fb-4e3e-87a7-aa1605f3f875",
+      "name": "Code - Boletín aún no disponible1"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ /BOLETIN_NO_DISPONIBLE/i.test(JSON.stringify($json.error ?? $json)) }}",
+                    "rightValue": "={{ /BOLETIN_NO_DISPONIBLE/i.test(JSON.stringify($json.error ?? $json)) }}",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "012a3f6a-c127-4a60-912b-d880447be422"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "7fdcd05d-94b0-4c1a-b66f-459cdb278cae",
+                    "leftValue": "={{ /ERR_NGROK_3200|endpoint.{0,40}offline|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|ECONNRESET|EAI_AGAIN|socket hang up/i.test(JSON.stringify($json.error ?? $json)) }}",
+                    "rightValue": "=502",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        144
+      ],
+      "id": "091f88b8-c846-4859-90bc-21c56cdb9969",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fecha = $('Code - preparar fecha MIDAGRI')\n  .first().json.fecha_objetivo;\n\nconst error = $input.first().json.error ?? {};\n\nconst status = Number(\n  error.httpCode ??\n  error.statusCode ??\n  error.status ??\n  0\n);\n\nreturn [{\n  json: {\n    ok: false,\n    estado: 'PUENTE_INACTIVO',\n    mercado: 'MMF2',\n    fecha,\n    codigo_http: status || null,\n    ingesta_realizada: false,\n    requiere_revision: true,\n    mensaje:\n      'No fue posible establecer conexión con el ' +\n      'puente Python/ngrok de MIDAGRI. ' +\n      'Verifica que el bridge y ngrok estén activos ' +\n      'y que la URL configurada sea correcta. ' +\n      'No se descargó el boletín ni se actualizaron precios.'\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        160
+      ],
+      "id": "fad3153f-677c-47cc-a8f3-5ee2b2af4de1",
+      "name": "Code - Error conexión MIDAGRI1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst fecha = $('Code - preparar fecha MIDAGRI')\n  .first().json.fecha_objetivo;\n\nconst error = $input.first().json.error ?? {};\n\nconst status = Number(\n  error.httpCode ??\n  error.statusCode ??\n  error.status ??\n  0\n);\n\nconst detalle = String(\n  error.message ??\n  'Sin información adicional'\n);\n\nreturn [{\n  json: {\n    ok: false,\n    estado: 'ERROR_DESCARGA_SIN_CLASIFICAR',\n    mercado: 'MMF2',\n    fecha,\n    codigo_http: status || null,\n    ingesta_realizada: false,\n    requiere_revision: true,\n    mensaje:\n      'La descarga del boletín MIDAGRI no pudo ' +\n      'completarse. No se confirmó si el problema ' +\n      'corresponde al túnel, a la fuente o al servicio. ' +\n      'No se actualizaron los precios.',\n    detalle_tecnico: detalle.slice(0, 300)\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        192
+      ],
+      "id": "ff3bbc18-fdcb-4f47-8123-bc59e3ca8919",
+      "name": "Code - Error inesperado MIDAGRI1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request Open Meteo Forecast 7 dias": {
+      "main": [
+        [
+          {
+            "node": "Code - Normalizar clima por lote1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "normalizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalizar": {
+      "main": [
+        [
+          {
+            "node": "Crear Code - Preparar lote",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript Regiones productoras": {
+      "main": [
+        [
+          {
+            "node": "Code - Agrupar regiones de 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Agrupar regiones de 5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Verificar ingesta de hoy": {
+      "main": [
+        [
+          {
+            "node": "IF - GMML pendiente",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF - MMF2 pendiente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger 10:00 am start": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Verificar ingesta de hoy",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript Regiones productoras",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - descargar PDF por Tunnel": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - preparar fecha MIDAGRI": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - descargar PDF por Tunnel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Code - Boletín aún no disponible",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Error conexión MIDAGRI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Error inesperado MIDAGRI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request Open Meteo Forecast 7 dias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Normalizar clima por lote1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Wait 3 segundos1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3 segundos1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Code - Preparar lote": {
+      "main": [
+        [
+          {
+            "node": "Postgres - Mapear ID maestro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres - Mapear ID maestro": {
+      "main": [
+        [
+          {
+            "node": "Code - Validar mapeo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Validar mapeo": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - GMML pendiente": {
+      "main": [
+        [
+          {
+            "node": "Code - preparar fecha MIDAGRI",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "IF - MMF2 pendiente": {
+      "main": [
+        [
+          {
+            "node": "Code - preparar fecha MIDAGRI1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Code - preparar fecha MIDAGRI1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - descargar PDF por Tunnel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Code - Parser MMF2 Prueba",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - descargar PDF por Tunnel1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query Buscar producto_id": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript Unir producto maestro",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code - Diagnosticar IDs WF1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript Unir producto maestro": {
+      "main": [
+        [
+          {
+            "node": "Code - Validar MMF2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Validar MMF2": {
+      "main": [
+        [
+          {
+            "node": "Insert or update rows in a table2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parser MMF2 Prueba": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query Buscar producto_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Code - Boletín aún no disponible1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Error conexión MIDAGRI1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code - Error inesperado MIDAGRI1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "America/Lima",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "c94ba9a5-6471-40bc-80de-35d2e34d5f0d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5b62e7e15bde60eadb5bd8099b933c21497cd00e8dceb64a70f5f6ac4a00ef14"
+  },
+  "nodeGroups": [],
+  "id": "cCC1p712obefY1IO",
+  "tags": []
+}

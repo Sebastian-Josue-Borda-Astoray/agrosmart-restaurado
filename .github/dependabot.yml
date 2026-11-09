@@ -1,0 +1,54 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/src/frontend/agrosmart-frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  # Antes solo se vigilaba agrosmart-frontend: cada microfrontend tiene su
+  # propio package-lock.json (arquitectura de microfrontends), así que una
+  # vulnerabilidad en uno de ellos no generaba PR automático de Dependabot
+  # para arreglarla (confirmado: 2 alertas reales de source-map-js llevaban
+  # abiertas en monitoreo/mercados sin ningún PR de corrección).
+  - package-ecosystem: "npm"
+    directory: "/src/frontend/chat-microfrontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/src/frontend/monitoreo-microfrontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/src/frontend/mercados-microfrontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/src/frontend/alertas-microfrontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/src/frontend/calendario-microfrontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "pip"
+    directory: "/src/ia-ops/tests"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
